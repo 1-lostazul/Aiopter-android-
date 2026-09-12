@@ -8,7 +8,8 @@ Native Android companion and AI orchestration service for **SEE. ASK. DO. ANYWHE
 - Draggable edge snapping, persistent placement, animated brand treatment, compact dark assistant panel, and immediate Kill control.
 - Progressive overlay, notification, microphone, and MediaProjection consent.
 - Tap-to-talk through Android speech recognition.
-- Request-driven screen understanding: one downscaled JPEG per explicit screen-aware prompt, no file persistence, and prompt buffers cleared after use.
+- Request-driven screen understanding: one downscaled JPEG per explicit screen-aware prompt, no file persistence, and image buffers cleared after use.
+- Per-app screen rules with **Allowed**, **Ask Every Time**, and **Never Allow** choices. New apps ask by default; unknown foreground apps, expired approvals, app switches, and protected or blank frames are blocked before encoding or transmission.
 - Text and image chat through a Hono service and Nxcode AI Gateway, with Server-Sent Events to the Android client.
 - Nxcode SDK sign-in in an origin-restricted WebView; session tokens are encrypted using Android Keystore.
 - Deterministic, user-approved maps intents. The model never executes arbitrary Android actions.
@@ -30,7 +31,7 @@ The release build defaults to the production API host and rejects cleartext traf
 
 ## Safety model
 
-Screen sharing and microphone access are off by default. Android owns each permission prompt, screen sharing has a persistent notification and stop action, and Kill cancels listening, capture, AI work, temporary buffers, and the overlay itself. Navigation is proposal-only until the user taps Review and confirms the external app launch.
+Screen sharing and microphone access are off by default. Android owns each permission prompt, screen sharing has a persistent notification and stop action, and Kill cancels listening, capture, active network work, temporary buffers, and the overlay itself. App awareness uses Android’s special usage access only to identify the foreground package at send time; the app list is limited to launchable apps and no broad package permission is requested. Navigation is proposal-only until the user taps Review and confirms the external app launch.
 
 ## Current acceptance boundary
 

@@ -15,4 +15,15 @@ object AccessPolicy {
         rule == AppAccessRule.ASK_EVERY_TIME -> AccessDecision.ASK
         else -> AccessDecision.BLOCK
     }
+
+    fun acceptsOneTimeApproval(
+        expectedPackage: String?,
+        currentPackage: String?,
+        requestedAtMillis: Long,
+        approvedAtMillis: Long,
+        maxAgeMillis: Long = 30_000,
+    ): Boolean = !expectedPackage.isNullOrBlank() &&
+        expectedPackage == currentPackage &&
+        approvedAtMillis >= requestedAtMillis &&
+        approvedAtMillis - requestedAtMillis <= maxAgeMillis
 }

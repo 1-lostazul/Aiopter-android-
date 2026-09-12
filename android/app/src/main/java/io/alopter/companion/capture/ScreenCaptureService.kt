@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import io.alopter.companion.*
 import io.alopter.companion.access.AccessPolicyStore
@@ -29,7 +30,11 @@ import java.io.ByteArrayOutputStream
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.roundToInt
 
-private data class CaptureRequest(val prompt: String, val approvedPackage: String? = null)
+private data class CaptureRequest(
+    val prompt: String,
+    val requestedAtMillis: Long = SystemClock.elapsedRealtime(),
+    val approvedPackage: String? = null,
+)
 
 class ScreenCaptureService : Service() {
     private var projection: MediaProjection? = null
@@ -68,9 +73,14 @@ class ScreenCaptureService : Service() {
     private fun approveOnce(expectedPackage: String?) {
         val request = awaitingApproval.getAndSet(null)
         val currentPackage = foregroundApps.currentPackage()
-        if (request == null || expectedPackage.isNullOrBlank() || currentPackage != expectedPackage) {
+        if (request == null || !AccessPolicy.acceptsOneTimeApproval(
+                expectedPackage = expectedPackage,
+                currentPackage = currentPackage,
+                requestedAtMillis = request.requestedAtMillis,
+                approvedAtMillis = SystemClock.elapsedRealtime(),
+            )) {
             SessionState.screen.value = ScreenState.BLOCKED_FOR_APP
-            broadcast("blocked", "The foreground app changed, so no screen context was sent.")
+            broadcast("blocked", "This approval expired or the foreground app changed, so no screen context was sent.")
             return
         }
         SessionState.screen.value = ScreenState.SHARING
@@ -117,7 +127,13 @@ class ScreenCaptureService : Service() {
             return
         }
         val rule = policyStore.ruleFor(currentPackage)
-        val decision = if (request.approvedPackage == currentPackage) AccessDecision.ALLOW else AccessPolicy.decide(rule, true)
+        val hasFreshApproval = AccessPolicy.acceptsOneTimeApproval(
+            expectedPackage = request.approvedPackage,
+            currentPackage = currentPackage,
+            requestedAtMillis = request.requestedAtMillis,
+            approvedAtMillis = SystemClock.elapsedRealtime(),
+        )
+        val decision = if (hasFreshApproval) AccessDecision.ALLOW else AccessPolicy.decide(rule, true)
         when (decision) {
             AccessDecision.BLOCK -> {
                 image.close()

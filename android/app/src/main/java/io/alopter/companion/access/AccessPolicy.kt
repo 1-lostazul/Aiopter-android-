@@ -61,5 +61,5 @@ class ForegroundAppResolver(private val context: Context) {
         context.packageManager.getApplicationLabel(info).toString()
     }.getOrDefault(packageName)
 
-    private companion object { const val LOOKBACK_MS = 30_000L }
+    private companion object { const val LOOKBACK_MS = 12 * 60 * 60 * 1_000L }
 }

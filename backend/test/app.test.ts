@@ -28,6 +28,30 @@ describe('Alopter API', () => {
     const response = await createApp(provider).request('/api/v1/chat/stream', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ requestId: 'device-name-or-other-pii', messages: [{ role: 'user', content: 'Hello' }] }) }, env)
     expect(response.status).toBe(400)
   })
+  it('aborts model work when the mobile request disconnects', async () => {
+    let markStarted: (() => void) | undefined
+    const started = new Promise<void>(resolve => { markStarted = resolve })
+    let upstreamAborted = false
+    const waitingProvider = async (_input: unknown, _env: unknown, _authorization?: string, signal?: AbortSignal) =>
+      new Promise<string>((_resolve, reject) => {
+        signal?.addEventListener('abort', () => {
+          upstreamAborted = true
+          reject(new Error('aborted'))
+        }, { once: true })
+        markStarted?.()
+      })
+    const controller = new AbortController()
+    const response = createApp(waitingProvider as typeof provider).request('/api/v1/chat/stream', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: 'Hello' }] }),
+      signal: controller.signal,
+    }, env)
+    await started
+    controller.abort()
+    await response
+    expect(upstreamAborted).toBe(true)
+  })
   it('requires login by default', async () => {
     const response = await createApp(provider).request('/api/v1/chat/stream', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'Hello' }] }) }, { THREAD_ID: 'test-thread' })
     expect(response.status).toBe(401)

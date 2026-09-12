@@ -33,6 +33,7 @@ export function createApp(provider: Provider = generateAssistantReply) {
     if (!parsed.success) return c.json({ error: 'Invalid chat request.', issues: parsed.error.issues.map(i => ({ path: i.path.join('.'), message: i.message })) }, 400)
 
     const requestId = parsed.data.requestId ?? crypto.randomUUID()
+    c.header('X-Request-Id', requestId)
     const aborter = new AbortController()
     const cancelUpstream = () => aborter.abort()
     c.req.raw.signal.addEventListener('abort', cancelUpstream, { once: true })
