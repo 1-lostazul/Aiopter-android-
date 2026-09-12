@@ -1,0 +1,10 @@
+{
+  "name": "alopter",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix backend run dev",
+    "test": "npm --prefix backend test",
+    "build": "npm --prefix backend run build",
+    "typecheck": "npm --prefix backend run typecheck"
+  }
+}
