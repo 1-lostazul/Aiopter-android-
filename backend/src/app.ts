@@ -32,11 +32,14 @@ export function createApp(provider: Provider = generateAssistantReply) {
     const parsed = ChatRequestSchema.safeParse(raw)
     if (!parsed.success) return c.json({ error: 'Invalid chat request.', issues: parsed.error.issues.map(i => ({ path: i.path.join('.'), message: i.message })) }, 400)
 
+    const requestId = parsed.data.requestId ?? crypto.randomUUID()
     const aborter = new AbortController()
+    const cancelUpstream = () => aborter.abort()
+    c.req.raw.signal.addEventListener('abort', cancelUpstream, { once: true })
     const reply = await provider(parsed.data, c.env, bearer ? `Bearer ${bearer}` : undefined, aborter.signal).catch(error => {
       if (error instanceof GatewayError) return { error: error.message, status: error.status } as const
       return { error: 'The assistant is temporarily unavailable.', status: 503 } as const
-    })
+    }).finally(() => c.req.raw.signal.removeEventListener('abort', cancelUpstream))
     if (typeof reply !== 'string') return c.json({ error: reply.error }, reply.status as 429 | 500 | 502 | 503)
 
     const action = deriveSafeAction(parsed.data.messages.at(-1)!.content)
@@ -54,7 +57,7 @@ export function createApp(provider: Provider = generateAssistantReply) {
       },
       cancel() { aborter.abort() },
     })
-    return new Response(stream, { headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store, no-transform', 'X-Accel-Buffering': 'no' } })
+    return new Response(stream, { headers: { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store, no-transform', 'X-Accel-Buffering': 'no', 'X-Request-Id': requestId } })
   })
   app.notFound(c => c.json({ error: 'Not found' }, 404))
   app.onError((error, c) => { console.error('request_failed', { name: error.name }); return c.json({ error: 'Unexpected server error.' }, 500) })

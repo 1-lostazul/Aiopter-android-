@@ -11,6 +11,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class BackendClient(private val baseUrl: String, private val tokenVault: TokenVault) {
@@ -20,7 +21,7 @@ class BackendClient(private val baseUrl: String, private val tokenVault: TokenVa
     suspend fun streamChat(history: List<ChatMessage>, imageJpeg: ByteArray? = null, onEvent: (StreamEvent) -> Unit): Call = withContext(Dispatchers.IO) {
         require(history.isNotEmpty())
         val messages = JSONArray().apply { history.takeLast(20).forEach { put(JSONObject().put("role", it.role).put("content", it.content)) } }
-        val json = JSONObject().put("messages", messages)
+        val json = JSONObject().put("requestId", UUID.randomUUID().toString()).put("messages", messages)
         imageJpeg?.let { json.put("image", JSONObject().put("mimeType", "image/jpeg").put("data", Base64.encodeToString(it, Base64.NO_WRAP))) }
         val request = Request.Builder().url("${baseUrl.trimEnd('/')}/api/v1/chat/stream")
             .post(json.toString().toRequestBody("application/json".toMediaType())).header("Accept", "text/event-stream")

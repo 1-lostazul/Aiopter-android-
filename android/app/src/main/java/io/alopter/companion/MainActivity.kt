@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.alopter.companion.access.AccessActivity
+import io.alopter.companion.access.ForegroundAppResolver
 import io.alopter.companion.auth.LoginActivity
 import io.alopter.companion.capture.ScreenCaptureService
 import io.alopter.companion.overlay.OverlayService
@@ -63,6 +65,7 @@ class MainActivity : ComponentActivity() {
                     onStart = ::beginOverlayFlow,
                     onStop = ::killAll,
                     onCapture = { showCaptureDisclosure = true },
+                    onAppsAccess = { startActivity(Intent(this, AccessActivity::class.java)) },
                     onLogin = { startActivity(Intent(this, LoginActivity::class.java)) },
                     onLogout = { (application as AlopterApp).tokenVault.clear(); refresh++ }
                 )
@@ -140,11 +143,12 @@ private fun DisclosureDialog(title: String, body: String, confirm: String, onDis
 }
 
 @Composable
-private fun HomeScreen(refresh: Int, onStart: () -> Unit, onStop: () -> Unit, onCapture: () -> Unit, onLogin: () -> Unit, onLogout: () -> Unit) {
+private fun HomeScreen(refresh: Int, onStart: () -> Unit, onStop: () -> Unit, onCapture: () -> Unit, onAppsAccess: () -> Unit, onLogin: () -> Unit, onLogout: () -> Unit) {
     val overlay by SessionState.overlay.collectAsStateWithLifecycle()
     val screen by SessionState.screen.collectAsStateWithLifecycle()
     val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as AlopterApp
     val loggedIn = remember(refresh) { app.tokenVault.hasSession() }
+    val appAwareness = remember(refresh) { ForegroundAppResolver(app).hasUsageAccess() }
     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF07101D), Color(0xFF080B12))))) {
         Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(28.dp))
@@ -166,10 +170,16 @@ private fun HomeScreen(refresh: Int, onStart: () -> Unit, onStop: () -> Unit, on
             }
             Spacer(Modifier.height(16.dp))
             StatusRow("Floating overlay", if (overlay == OverlayState.BUBBLE || overlay == OverlayState.PANEL) "On" else "Off")
-            StatusRow("Screen sharing", if (screen == ScreenState.SHARING) "On · visible notification" else "Off by default")
+            StatusRow("Screen sharing", when {
+                screen == ScreenState.BLOCKED_FOR_APP -> "On · current app blocked"
+                screen.isSessionActive -> "On · visible notification"
+                else -> "Off by default"
+            })
             StatusRow("Microphone", "Tap-to-talk only")
+            StatusRow("App awareness", if (appAwareness) "On · rules enforced" else "Off · frames blocked")
             Spacer(Modifier.height(12.dp))
-            OutlinedButton(onClick = onCapture, modifier = Modifier.fillMaxWidth()) { Text(if (screen == ScreenState.SHARING) "Screen sharing is active" else "Enable screen sharing") }
+            OutlinedButton(onClick = onCapture, modifier = Modifier.fillMaxWidth()) { Text(if (screen.isSessionActive) "Screen sharing is active" else "Enable screen sharing") }
+            OutlinedButton(onClick = onAppsAccess, modifier = Modifier.fillMaxWidth()) { Text("Manage Apps & Access") }
             Spacer(Modifier.weight(1f))
             Surface(color = Color(0x99111822), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {

@@ -6,6 +6,7 @@ export const ChatMessageSchema = z.object({
 })
 
 export const ChatRequestSchema = z.object({
+  requestId: z.string().uuid().optional(),
   messages: z.array(ChatMessageSchema).min(1).max(20),
   image: z.object({
     mimeType: z.enum(['image/jpeg', 'image/png']),

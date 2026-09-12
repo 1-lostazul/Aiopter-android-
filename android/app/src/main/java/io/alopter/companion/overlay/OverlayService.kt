@@ -48,6 +48,11 @@ class OverlayService : Service(), RecognitionListener {
             when (intent?.getStringExtra(ScreenCaptureService.EXTRA_EVENT_TYPE)) {
                 "delta" -> appendResponse(intent.getStringExtra(ScreenCaptureService.EXTRA_TEXT).orEmpty())
                 "done" -> { statusText?.text = "Ready"; SessionState.ai.value = AiState.COMPLETE }
+                "access_request" -> showAccessConfirmation(
+                    intent.getStringExtra(ScreenCaptureService.EXTRA_TEXT).orEmpty(),
+                    intent.getStringExtra(ScreenCaptureService.EXTRA_PACKAGE).orEmpty(),
+                )
+                "blocked", "protected", "usage_access_required", "access_denied" -> showError(intent.getStringExtra(ScreenCaptureService.EXTRA_TEXT) ?: "Screen context was not sent")
                 "error" -> showError(intent.getStringExtra(ScreenCaptureService.EXTRA_TEXT) ?: "Screen analysis failed")
             }
         }
@@ -147,8 +152,8 @@ class OverlayService : Service(), RecognitionListener {
         panel.addView(panelInput, LinearLayout.LayoutParams(-1, WindowManager.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
         val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
         controls.addView(button("Mic") { requestVoice() }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginEnd = dp(6) })
-        controls.addView(button(if (SessionState.screen.value == ScreenState.SHARING) "See: ON" else "See: OFF") { toggleScreen() }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginEnd = dp(6) })
-        controls.addView(button("Send") { submit(SessionState.screen.value == ScreenState.SHARING) }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        controls.addView(button(if (SessionState.screen.value.isSessionActive) "See: ON" else "See: OFF") { toggleScreen() }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginEnd = dp(6) })
+        controls.addView(button("Send") { submit(SessionState.screen.value.isSessionActive) }, LinearLayout.LayoutParams(0, dp(48), 1f))
         panel.addView(controls, LinearLayout.LayoutParams(-1, dp(56)).apply { topMargin = dp(6) })
         return panel
     }
@@ -159,7 +164,7 @@ class OverlayService : Service(), RecognitionListener {
         panelInput?.text?.clear(); panelResponse?.text = ""; pendingAction = null; actionButton?.visibility = View.GONE
         history += ChatMessage("user", prompt); statusText?.text = if (withScreen) "Capturing one frame…" else "Thinking…"
         if (withScreen) {
-            if (SessionState.screen.value != ScreenState.SHARING) { showError("Turn on screen sharing first."); return }
+            if (!SessionState.screen.value.isSessionActive) { showError("Turn on screen sharing first."); return }
             root?.visibility = View.INVISIBLE
             scope.launch {
                 delay(280)
@@ -188,6 +193,35 @@ class OverlayService : Service(), RecognitionListener {
         }
     }
 
+    private fun showAccessConfirmation(appLabel: String, packageName: String) {
+        if (packageName.isBlank()) {
+            showError("Alopter could not identify the foreground app, so no screen context was sent.")
+            return
+        }
+        statusText?.text = "Waiting for screen access approval"
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Allow This Time?")
+            .setMessage("Send one temporary screen frame from $appLabel for this question? This does not change the app’s saved rule.")
+            .setNegativeButton("Not now") { _, _ ->
+                startService(Intent(this, ScreenCaptureService::class.java).setAction(ScreenCaptureService.ACTION_DENY_ONCE))
+            }
+            .setPositiveButton("Allow This Time") { _, _ ->
+                root?.visibility = View.INVISIBLE
+                startService(
+                    Intent(this, ScreenCaptureService::class.java)
+                        .setAction(ScreenCaptureService.ACTION_ALLOW_ONCE)
+                        .putExtra(ScreenCaptureService.EXTRA_PACKAGE, packageName),
+                )
+                scope.launch { delay(700); root?.visibility = View.VISIBLE }
+            }
+            .create()
+        dialog.window?.setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
+        dialog.setOnCancelListener {
+            startService(Intent(this, ScreenCaptureService::class.java).setAction(ScreenCaptureService.ACTION_DENY_ONCE))
+        }
+        dialog.show()
+    }
+
     private fun showAction(action: ProposedAction) {
         pendingAction = action; actionButton?.text = "Review: ${action.label}"; actionButton?.visibility = View.VISIBLE
     }
@@ -200,7 +234,7 @@ class OverlayService : Service(), RecognitionListener {
     }
 
     private fun toggleScreen() {
-        if (SessionState.screen.value == ScreenState.SHARING) {
+        if (SessionState.screen.value.isSessionActive) {
             stopService(Intent(this, ScreenCaptureService::class.java)); SessionState.screen.value = ScreenState.OFF; statusText?.text = stateSummary()
         } else startActivity(Intent(this, MainActivity::class.java).setAction(MainActivity.ACTION_CAPTURE_SCREEN).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP))
     }
@@ -225,7 +259,7 @@ class OverlayService : Service(), RecognitionListener {
 
     private fun appendResponse(text: String) { panelResponse?.append(text); statusText?.text = "Answering…" }
     private fun showError(message: String) { panelResponse?.text = message; statusText?.text = "Needs attention"; SessionState.ai.value = AiState.ERROR }
-    private fun stateSummary() = "Screen ${if (SessionState.screen.value == ScreenState.SHARING) "ON" else "OFF"}  •  Mic ${if (SessionState.mic.value == MicState.LISTENING) "ON" else "idle"}"
+    private fun stateSummary() = "Screen ${if (SessionState.screen.value.isSessionActive) "ON" else "OFF"}  •  Mic ${if (SessionState.mic.value == MicState.LISTENING) "ON" else "idle"}"
 
     private fun button(label: String, danger: Boolean = false, action: () -> Unit) = Button(this).apply {
         text = label; textSize = 11f; setTextColor(Color.WHITE); isAllCaps = false; background = rounded(if (danger) Color.rgb(141, 42, 52) else Color.rgb(31, 73, 112), 14); setOnClickListener { action() }

@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import io.alopter.companion.AlopterApp
 import io.alopter.companion.BuildConfig
+import io.alopter.policy.UriSafety
 import org.json.JSONObject
 
 class LoginActivity : ComponentActivity() {
@@ -68,12 +69,4 @@ class LoginActivity : ComponentActivity() {
     }
 
     override fun onDestroy() { mainWebView.removeJavascriptInterface("AlopterAuth"); mainWebView.destroy(); super.onDestroy() }
-}
-
-object UriSafety {
-    fun isAllowed(candidate: String, base: String): Boolean = runCatching {
-        val c = java.net.URI(candidate); val b = java.net.URI(base)
-        c.scheme == b.scheme && c.host == b.host && effectivePort(c) == effectivePort(b)
-    }.getOrDefault(false)
-    private fun effectivePort(uri: java.net.URI) = if (uri.port != -1) uri.port else if (uri.scheme == "https") 443 else 80
 }

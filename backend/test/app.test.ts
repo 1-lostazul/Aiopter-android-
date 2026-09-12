@@ -15,12 +15,18 @@ describe('Alopter API', () => {
     const response = await createApp(provider).request('/api/v1/chat/stream', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: [] }) }, env)
     expect(response.status).toBe(400)
   })
-  it('streams text and completion', async () => {
-    const response = await createApp(provider).request('/api/v1/chat/stream', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'Hello' }] }) }, env)
+  it('streams text and completion with the client request ID', async () => {
+    const requestId = 'd9afad2e-c6f2-4c2b-917a-4d7ddfdc8e1d'
+    const response = await createApp(provider).request('/api/v1/chat/stream', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ requestId, messages: [{ role: 'user', content: 'Hello' }] }) }, env)
     expect(response.status).toBe(200)
+    expect(response.headers.get('x-request-id')).toBe(requestId)
     const body = await response.text()
     expect(body).toContain('"type":"delta"')
     expect(body).toContain('"type":"done"')
+  })
+  it('rejects malformed request IDs', async () => {
+    const response = await createApp(provider).request('/api/v1/chat/stream', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ requestId: 'device-name-or-other-pii', messages: [{ role: 'user', content: 'Hello' }] }) }, env)
+    expect(response.status).toBe(400)
   })
   it('requires login by default', async () => {
     const response = await createApp(provider).request('/api/v1/chat/stream', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'Hello' }] }) }, { THREAD_ID: 'test-thread' })

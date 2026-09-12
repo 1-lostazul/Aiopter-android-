@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "Alopter"
-include(":android:app")
+include(":android:app", ":core:policy")

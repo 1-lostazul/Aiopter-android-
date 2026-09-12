@@ -1,7 +1,7 @@
-package io.alopter.companion
+package io.alopter.policy
 
-import io.alopter.companion.auth.UriSafety
-import org.junit.Assert.*
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UriSafetyTest {
