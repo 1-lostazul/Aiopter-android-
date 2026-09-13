@@ -17,3 +17,4 @@ backend/dist/
 captures/
 .dev_server_info
 .dev_server_port
+.nxcode-secrets/
