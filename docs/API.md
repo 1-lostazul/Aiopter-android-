@@ -2,7 +2,7 @@
 
 ## Health
 
-`GET /health` returns service identity and version.
+`GET /health` returns service identity and version only when a deployment identity is configured. It fails closed with a service-unavailable response when neither the production app identity nor a development workspace identity is present.
 
 ## Chat stream
 

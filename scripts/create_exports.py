@@ -22,7 +22,7 @@ except Exception:
 
 generated = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
 
-transcript = r'''ALOPTER PROJECT — USER-FACING CHAT TRANSCRIPT
+transcript = r'''AIOPTER PROJECT — USER-FACING CHAT TRANSCRIPT
 Generated: {generated}
 Project revision at export: {revision}
 
@@ -31,7 +31,7 @@ This is a copy/paste transcript of the user-facing dialogue retained in the curr
 
 USER: Continue
 
-NXCODE: Alopter now supports per-app screen rules, defaults new apps to “Ask Every Time,” and blocks unknown, switched, protected, or stale-approved screens before transmission. The Kill control now cancels active network work, while privacy-safe request IDs improve diagnostics without logging content. Next, test the flow on an Android device and enable App Awareness when prompted; browser preview is unavailable because this workspace has no external port mapping.
+NXCODE: AIopter now supports per-app screen rules, defaults new apps to “Ask Every Time,” and blocks unknown, switched, protected, or stale-approved screens before transmission. The Kill control now cancels active network work, while privacy-safe request IDs improve diagnostics without logging content. Next, test the flow on an Android device and enable App Awareness when prompted; browser preview is unavailable because this workspace has no external port mapping.
 
 USER: So what needs to be done next
 
@@ -64,7 +64,7 @@ NXCODE: If you control the Cloudflare account:
 2. Open Settings → Delete Worker, enter its name, and confirm—do not delete an active or unfamiliar Worker.
 3. If this is Nxcode’s managed Cloudflare account and you cannot access that page, delete an old deployment from your Nxcode workspace or contact Nxcode support to free a Worker slot.
 
-The failed Alopter deployment was not created, so deleting it will not help; once a slot is available, tell me “retry deployment.”
+The failed AIopter deployment was not created, so deleting it will not help; once a slot is available, tell me “retry deployment.”
 
 USER: How will I know when a slot is opened
 
@@ -103,7 +103,7 @@ NXCODE: I can’t access Nxcode’s support inbox or view your email status. Onc
 
 USER: Can u try again to deploy
 
-NXCODE: The retry is still blocked by the same Nxcode-managed Cloudflare account limit, and no Alopter deployment was created. We need Nxcode support to free capacity or raise the limit before another attempt will work.
+NXCODE: The retry is still blocked by the same Nxcode-managed Cloudflare account limit, and no AIopter deployment was created. We need Nxcode support to free capacity or raise the limit before another attempt will work.
 
 USER ACTION: accept_delivery
 
@@ -117,7 +117,7 @@ USER: What should I do to get this problem remedied
 
 NXCODE: Reply to your Nxcode support email with this exact message:
 
-“My first backend deployment is blocked by the 500-Worker limit on Nxcode’s managed Cloudflare account. The deployment target is developer-code-sandbox-alopter-api, and Cloudflare returns error 10037. Please free a Worker slot, increase the account limit, or move my workspace to an account with available capacity. Please confirm when I can retry.”
+“My first backend deployment is blocked by the 500-Worker limit on Nxcode’s managed Cloudflare account. The deployment target is developer-code-sandbox-aiopter-api, and Cloudflare returns error 10037. Please free a Worker slot, increase the account limit, or move my workspace to an account with available capacity. Please confirm when I can retry.”
 
 Also include a screenshot of the deployment error if possible. You do not need to modify your personal Cloudflare account; after Nxcode confirms the fix, return here and say “retry deployment.”
 
@@ -161,7 +161,7 @@ USER: How do i export to github.com
 
 NXCODE:
 1. Go to https://github.com/new and sign in.
-2. Enter a repository name, such as alopter.
+2. Enter a repository name, such as aiopter.
 3. Choose Private or Public.
 4. Leave README, .gitignore, and license unchecked.
 5. Click Create repository.
@@ -175,7 +175,7 @@ NXCODE: Create the empty GitHub repository, then paste its HTTPS address here. I
 USER: Create me a copy and paste for this entire chat plus a docx file of the exact code specs with a download link
 '''.format(generated=generated, revision=revision)
 
-transcript_path = OUT / 'alopter-chat-transcript.txt'
+transcript_path = OUT / 'aiopter-chat-transcript.txt'
 transcript_path.write_text(transcript, encoding='utf-8')
 
 # ---------- Word specification ----------
@@ -199,14 +199,14 @@ for name, size, color in [('Heading 1', 19, RGBColor(10, 69, 110)), ('Heading 2'
 
 # Header/footer
 header = section.header.paragraphs[0]
-header.text = 'ALOPTER  |  IMPLEMENTATION SPECIFICATION'
+header.text = 'AIOPTER  |  IMPLEMENTATION SPECIFICATION'
 header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
 for r in header.runs:
     r.font.size = Pt(8)
     r.font.color.rgb = RGBColor(95, 110, 120)
 footer = section.footer.paragraphs[0]
 footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
-footer.add_run('Alopter specification  •  ')
+footer.add_run('AIopter specification  •  ')
 field = OxmlElement('w:fldSimple')
 field.set(qn('w:instr'), 'PAGE')
 footer._p.append(field)
@@ -286,7 +286,7 @@ def status_box(title, text, fill='FFF4CE'):
 p = doc.add_paragraph()
 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 p.add_run('\n\n')
-r = p.add_run('ALOPTER')
+r = p.add_run('AIOPTER')
 r.bold = True; r.font.size = Pt(38); r.font.color.rgb = RGBColor(0, 116, 166)
 r = p.add_run('\nExact Code & Product Specification')
 r.font.size = Pt(22); r.font.color.rgb = RGBColor(17, 55, 80)
@@ -298,7 +298,7 @@ table(['Document field', 'Value'], [
     ('Specification status', 'As implemented in the current repository'),
     ('Project revision', revision),
     ('Generated', generated),
-    ('Application ID', 'io.alopter.companion (release); io.alopter.companion.debug (debug)'),
+    ('Application ID', 'io.aiopter.companion (release); io.aiopter.companion.debug (debug)'),
     ('Deployment status', 'Not deployed; blocked by managed Cloudflare Worker capacity'),
     ('Live integration status', 'Nxcode login and AI screenshot flow remain unverified in production'),
 ], [2.0, 4.8])
@@ -307,9 +307,9 @@ doc.add_page_break()
 
 # Executive summary
 doc.add_heading('1. Executive Summary', level=1)
-doc.add_paragraph('Alopter is a native Android companion designed around the phrase “SEE. ASK. DO. ANYWHERE.” It provides a user-controlled floating assistant, explicit microphone and MediaProjection consent, request-driven single-frame screen understanding, per-app screen access policies, Nxcode-backed AI responses, and proposal-only external actions.')
+doc.add_paragraph('AIopter is a native Android companion designed around the phrase “SEE. ASK. DO. ANYWHERE.” It provides a user-controlled floating assistant, explicit microphone and MediaProjection consent, request-driven screen understanding, per-app screen access policies, Nxcode-backed AI responses, and proposal-only external actions.')
 bullet('Screen and microphone capabilities are off by default and require explicit user action.')
-bullet('One reduced-quality frame is captured only for an explicit screen-aware request; frames are never intentionally persisted.')
+bullet('While screen sharing is on, Android may continuously provide frames internally. AIopter processes and sends one reduced-quality image only for an explicit screen-aware request; frames are never permanently stored.')
 bullet('Every frame is gated by foreground-app identification and a locally stored per-app rule before image encoding or network transmission.')
 bullet('New apps default to Ask Every Time. One-time approvals expire after 30 seconds and are invalidated by foreground-app changes.')
 bullet('Protected or nearly black frames are rejected locally.')
@@ -332,7 +332,7 @@ doc.add_heading('2.1 Runtime flow', level=2)
 for item in [
     'The user starts the floating assistant and grants Android overlay/notification consent where required.',
     'The user separately enables screen sharing through an explanatory disclosure followed by Android MediaProjection consent.',
-    'For a screen-aware prompt, the overlay hides briefly and requests one frame from the capture service.',
+    'For a screen-aware prompt, the overlay hides briefly and requests one image for processing; other internally available frames are closed without transmission.',
     'The capture service identifies the foreground package through Usage Access. If unavailable, transmission is blocked.',
     'The service loads the local app rule: Allowed, Ask Every Time, or Never Allow.',
     'Ask Every Time closes the acquired image and asks for one-time approval. Approval is accepted only if fresh and the foreground package still matches.',
@@ -344,13 +344,13 @@ for item in [
 # Android specs
 doc.add_heading('3. Android Application Specification', level=1)
 table(['Setting', 'Exact value'], [
-    ('Namespace / release application ID', 'io.alopter.companion'),
-    ('Debug application ID', 'io.alopter.companion.debug'),
+    ('Namespace / release application ID', 'io.aiopter.companion'),
+    ('Debug application ID', 'io.aiopter.companion.debug'),
     ('Minimum Android version', 'API 29 (Android 10)'),
     ('Target / compile SDK', 'API 36'),
     ('Release version', '1.0.0, versionCode 1'),
     ('Java/Kotlin target', 'JVM 17'),
-    ('Production API base URL', 'https://api.alopter.app (configured but not live-verified)'),
+    ('Production API base URL', 'https://api.aiopter.ai (configured but not live-verified)'),
     ('Emulator debug API base URL', 'http://10.0.2.2:3001'),
     ('Physical-device debug API', 'Must be supplied as an HTTPS Gradle property'),
 ], [2.5, 4.2])
@@ -432,7 +432,7 @@ bullet('Android loads /auth/mobile from the configured backend base URL inside a
 bullet('The primary WebView permits navigation only to the exact configured origin: matching scheme, host, and effective port.')
 bullet('OAuth popup WebViews may navigate only to HTTPS origins and do not receive the JavaScript bridge.')
 bullet('File and content access are disabled; popup creation must be user initiated.')
-bullet('The auth page uses Nxcode SDK version 1.0.14 and returns a session token through the AlopterAuth bridge.')
+bullet('The auth page uses Nxcode SDK version 1.0.14 and returns a session token through the AIopterAuth bridge.')
 bullet('The bridge accepts tokens only when length is between 16 and 8,192 characters.')
 bullet('Session token encryption uses Android Keystore AES/GCM/NoPadding with a 128-bit GCM authentication tag; ciphertext and IV are stored in private app preferences.')
 bullet('The app never receives or stores the user’s password.')
@@ -441,7 +441,7 @@ status_box('Unverified external integration', 'The deployed Nxcode login respons
 # API
 doc.add_heading('7. Backend API Contract', level=1)
 table(['Route', 'Method', 'Contract'], [
-    ('/health', 'GET', 'Returns { ok: true, service: "alopter-api", version: "v1" }.'),
+    ('/health', 'GET', 'Returns { ok: true, service: "aiopter-api", version: "v1" }.'),
     ('/auth/mobile', 'GET', 'Returns no-store mobile Nxcode login HTML with SAMEORIGIN framing policy and no-referrer policy.'),
     ('/api/v1/chat/stream', 'POST', 'Authenticated JSON request; validated, rate-limited AI response returned as text/event-stream.'),
 ], [2.0, 0.8, 3.8])
@@ -506,7 +506,7 @@ doc.add_heading('10. Network Security', level=1)
 bullet('Release builds reject all cleartext traffic.')
 bullet('Debug builds also reject cleartext globally but permit the exact Android emulator bridge host 10.0.2.2 for local development.')
 bullet('Physical-device development must use an HTTPS backend URL; browser-facing localhost is not used in Android production code.')
-bullet('The production endpoint currently configured in the release build is https://api.alopter.app; it must not be treated as live until deployment and probes succeed.')
+bullet('The production endpoint currently configured in the release build is https://api.aiopter.ai; it must not be treated as live until deployment and probes succeed.')
 
 # Tests
 doc.add_heading('11. Automated Verification', level=1)
@@ -528,14 +528,14 @@ bullet('Android job uses Temurin JDK 17, Android SDK 36, Build Tools 35.0.0, deb
 # Deployment
 doc.add_heading('12. Deployment Specification and Current Status', level=1)
 table(['Worker setting', 'Value'], [
-    ('Worker logical name', 'alopter-api'),
+    ('Worker logical name', 'aiopter-api'),
     ('Entrypoint', 'src/app.ts'),
     ('Compatibility date', '2024-12-01'),
     ('NXCODE_APP_ID manifest placeholder', 'Empty; platform deployment is expected to assign production identity'),
     ('AUTH_REQUIRED', 'true'),
     ('Deployment method', 'Nxcode Hono deployment to Cloudflare Workers'),
 ], [2.4, 4.3])
-status_box('Deployment blocker', 'Cloudflare rejected the publish request because the Nxcode-managed account had reached its limit of 500 Workers. Error code: 10037. Multiple unchanged probes reproduced the same result. No Alopter Worker was created and no production URL or app identity was issued.', 'F8CBAD')
+status_box('Deployment blocker', 'Cloudflare rejected the publish request because the Nxcode-managed account had reached its limit of 500 Workers. Error code: 10037. Multiple unchanged probes reproduced the same result. No AIopter Worker was created and no production URL or app identity was issued.', 'F8CBAD')
 
 doc.add_heading('12.1 Required deployment sequence after capacity is restored', level=2)
 for item in [
@@ -594,9 +594,9 @@ table(['Area', 'Purpose'], [
 
 doc.add_heading('Appendix B — Support Message for Deployment Capacity', level=1)
 doc.add_paragraph('Copy/paste message:')
-code('My first backend deployment is blocked by the 500-Worker limit on Nxcode’s managed Cloudflare account. The deployment target is developer-code-sandbox-alopter-api, and Cloudflare returns error 10037. Please free a Worker slot, increase the account limit, or move my workspace to an account with available capacity. Please confirm when I can retry.')
+code('My first backend deployment is blocked by the 500-Worker limit on Nxcode’s managed Cloudflare account. The deployment target is developer-code-sandbox-aiopter-api, and Cloudflare returns error 10037. Please free a Worker slot, increase the account limit, or move my workspace to an account with available capacity. Please confirm when I can retry.')
 
-spec_path = OUT / 'alopter-exact-code-specification.docx'
+spec_path = OUT / 'aiopter-exact-code-specification.docx'
 doc.save(spec_path)
 
 # Validate that Word package can be reopened.
@@ -605,10 +605,10 @@ assert len(check.paragraphs) > 50
 assert len(check.tables) > 10
 
 # Add a plain-text index for copy/paste and provenance.
-index = f'''ALOPTER EXPORT PACKAGE\nGenerated: {generated}\nRevision: {revision}\n\nFiles:\n- alopter-chat-transcript.txt — copy/paste user-facing conversation\n- alopter-exact-code-specification.docx — formatted implementation and acceptance specification\n\nSecurity note: hidden instructions, internal execution logs, tokens, keys, prompts, screenshots, and credentials are not included.\n'''
+index = f'''AIOPTER EXPORT PACKAGE\nGenerated: {generated}\nRevision: {revision}\n\nFiles:\n- aiopter-chat-transcript.txt — copy/paste user-facing conversation\n- aiopter-exact-code-specification.docx — formatted implementation and acceptance specification\n\nSecurity note: hidden instructions, internal execution logs, tokens, keys, prompts, screenshots, and credentials are not included.\n'''
 (OUT / 'README.txt').write_text(index, encoding='utf-8')
 
-zip_path = OUT / 'alopter-chat-and-code-specs.zip'
+zip_path = OUT / 'aiopter-chat-and-code-specs.zip'
 with ZipFile(zip_path, 'w', ZIP_DEFLATED) as z:
     z.write(transcript_path, transcript_path.name)
     z.write(spec_path, spec_path.name)

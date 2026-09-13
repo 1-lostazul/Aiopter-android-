@@ -5,24 +5,24 @@ plugins {
 }
 
 android {
-    namespace = "io.alopter.companion"
+    namespace = "io.aiopter.companion"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.alopter.companion"
+        applicationId = "io.aiopter.companion"
         minSdk = 29
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "API_BASE_URL", "\"https://api.alopter.app\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://api.aiopter.ai\"")
     }
 
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            buildConfigField("String", "API_BASE_URL", "\"${providers.gradleProperty("ALOPTER_DEBUG_API_URL").orElse("http://10.0.2.2:3001").get()}\"")
+            buildConfigField("String", "API_BASE_URL", "\"${providers.gradleProperty("AIOPTER_DEBUG_API_URL").orElse("http://10.0.2.2:3001").get()}\"")
         }
         release {
             isMinifyEnabled = true

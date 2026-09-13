@@ -13,13 +13,17 @@ export function createApp(provider: Provider = generateAssistantReply) {
   const limiter = new FixedWindowLimiter(24, 60_000)
   app.use('/api/*', secureHeaders())
 
-  app.get('/health', c => c.json({ ok: true, service: 'alopter-api', version: 'v1' }))
+  app.get('/health', c => hasGatewayIdentity(c.env)
+    ? c.json({ ok: true, service: 'aiopter-api', version: 'v1' })
+    : c.json({ ok: false, service: 'aiopter-api', error: 'Service identity is not configured.' }, 503))
   app.get('/auth/mobile', c => c.html(mobileAuthPage, 200, { 'Cache-Control': 'no-store', 'X-Frame-Options': 'SAMEORIGIN', 'Referrer-Policy': 'no-referrer' }))
 
   app.post('/api/v1/chat/stream', async c => {
+    if (!hasGatewayIdentity(c.env)) return c.json({ error: 'The assistant service is not configured.' }, 503)
     const authorization = c.req.header('Authorization')
     const bearer = authorization?.match(/^Bearer\s+(\S+)$/i)?.[1]
-    const authRequired = c.env.AUTH_REQUIRED !== 'false'
+    const isProduction = Boolean(c.env.NXCODE_APP_ID?.trim())
+    const authRequired = isProduction || c.env.AUTH_REQUIRED !== 'false'
     if (authRequired && !bearer) return c.json({ error: 'Sign in is required.' }, 401)
     const identity = bearer ? `user:${hash(bearer)}` : `ip:${c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'local'}`
     const rate = limiter.consume(identity)
@@ -71,6 +75,7 @@ function chunkText(text: string, target: number): string[] {
   if (current) chunks.push(current); return chunks
 }
 function delay(ms: number) { return new Promise(resolve => setTimeout(resolve, ms)) }
+function hasGatewayIdentity(env: Env): boolean { return Boolean(env.NXCODE_APP_ID?.trim() || env.THREAD_ID?.trim()) }
 function hash(value: string) { let result = 2166136261; for (let i = 0; i < value.length; i++) result = Math.imul(result ^ value.charCodeAt(i), 16777619); return (result >>> 0).toString(16) }
 
 export default createApp()

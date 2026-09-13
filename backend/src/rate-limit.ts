@@ -1,5 +1,7 @@
 type Bucket = { count: number; resetAt: number }
 
+// RELEASE BLOCKER: this process-local limiter does not coordinate across production instances.
+// Replace it with an atomic, shared durable store before any public release.
 export class FixedWindowLimiter {
   private readonly buckets = new Map<string, Bucket>()
   constructor(private readonly limit = 30, private readonly windowMs = 60_000) {}

@@ -3,17 +3,17 @@
 ## Data flow
 
 1. Text is sent only when the user taps Send.
-2. Microphone audio is handled by Android speech recognition after a just-in-time permission request; Alopter does not write raw audio.
+2. Microphone audio is handled by Android speech recognition after a just-in-time permission request; AIopter does not write raw audio.
 3. Screen sharing starts only after Android MediaProjection consent. The service keeps a persistent notification.
-4. While sharing is active, a reduced frame is produced only for a user-submitted question. The overlay is hidden during capture, no screenshot is written to disk, and the encoded byte array is cleared after the request.
+4. While screen sharing is on, Android may continuously provide frames internally. AIopter processes and sends one reduced-quality screen image only when the user asks for screen-aware help. The overlay is hidden while that image is selected, frames are not permanently stored, no screenshot is written to disk, and the encoded byte array is overwritten after request completion or cancellation.
 5. The backend validates size and shape, sends the minimum prompt/image context to Nxcode AI Gateway, and does not log content.
 
 ## Before a store release
 
-- Replace and verify the production API hostname, and keep mandatory authentication enabled.
+- Deploy and verify `https://api.aiopter.ai` with an actual HTTPS health check and authenticated AI request; keep mandatory authentication enabled.
 - Run login, text, vision, cancellation, and maps-intent acceptance tests on real Pixel, Samsung, and Motorola devices across supported Android versions.
 - Confirm current Google Play foreground-service, overlay, MediaProjection, Data safety, privacy policy, account deletion, and SDK disclosure requirements.
-- Add per-app sensitive-screen rules before allowing screen sharing in financial, identity, medical, password-manager, or other high-risk apps.
+- Keep financial, identity, medical, password-manager, authentication-code, and other high-risk apps set to Never Allow, and verify those rules on real devices.
 - Configure production monitoring that records timings and opaque request IDs only—not prompts, screenshots, audio, tokens, or response bodies.
 - Complete signing, dependency review, staged rollout, incident response, and rollback procedures.
 

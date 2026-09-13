@@ -1,5 +1,5 @@
 {
-  "name": "alopter",
+  "name": "aiopter",
   "private": true,
   "scripts": {
     "dev": "npm --prefix backend run dev",

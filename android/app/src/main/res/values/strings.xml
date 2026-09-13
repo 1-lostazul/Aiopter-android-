@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">Alopter</string>
+    <string name="app_name">AIopter</string>
     <string name="overlay_channel_name">Floating assistant</string>
     <string name="capture_channel_name">Screen sharing</string>
-    <string name="overlay_notification">Alopter is ready above your apps</string>
-    <string name="capture_notification">Alopter screen sharing is active</string>
+    <string name="overlay_notification">AIopter is ready above your apps</string>
+    <string name="capture_notification">AIopter screen sharing is active</string>
 </resources>

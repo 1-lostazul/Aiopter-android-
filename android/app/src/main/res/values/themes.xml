@@ -1,5 +1,5 @@
 <resources>
-    <style name="Theme.Alopter" parent="android:style/Theme.Material.Light.NoActionBar">
+    <style name="Theme.AIopter" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:statusBarColor">#080B12</item>

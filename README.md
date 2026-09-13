@@ -1,4 +1,4 @@
-# Alopter
+# AIopter
 
 Native Android companion and AI orchestration service for **SEE. ASK. DO. ANYWHERE**.
 
@@ -8,12 +8,12 @@ Native Android companion and AI orchestration service for **SEE. ASK. DO. ANYWHE
 - Draggable edge snapping, persistent placement, animated brand treatment, compact dark assistant panel, and immediate Kill control.
 - Progressive overlay, notification, microphone, and MediaProjection consent.
 - Tap-to-talk through Android speech recognition.
-- Request-driven screen understanding: one downscaled JPEG per explicit screen-aware prompt, no file persistence, and image buffers cleared after use.
+- While screen sharing is on, Android may continuously provide frames internally. AIopter processes and sends one reduced-quality screen image only for an explicit screen-aware prompt; frames are not permanently stored and temporary image bytes are cleared after use.
 - Per-app screen rules with **Allowed**, **Ask Every Time**, and **Never Allow** choices. New apps ask by default; unknown foreground apps, expired approvals, app switches, and protected or blank frames are blocked before encoding or transmission.
 - Text and image chat through a Hono service and Nxcode AI Gateway, with Server-Sent Events to the Android client.
 - Nxcode SDK sign-in in an origin-restricted WebView; session tokens are encrypted using Android Keystore.
 - Deterministic, user-approved maps intents. The model never executes arbitrary Android actions.
-- Request schemas, payload limits, rate limiting, normalized errors, cancellation, security headers, and no prompt/image logging.
+- Request schemas, payload limits, normalized errors, cancellation, security headers, and no prompt/image logging. The current process-local rate limiter is for development only; shared durable rate limiting remains a release blocker.
 
 ## Local development
 
@@ -27,7 +27,7 @@ The Nxcode workspace supplies its development identity. Every AI request require
 
 Open the repository root in Android Studio, select the Android app configuration, and run on Android 10 or newer. The project requires JDK 17 and Android SDK 36. For a physical device, provide the HTTPS backend URL as the debug API Gradle property rather than using a browser-facing localhost address.
 
-The release build defaults to the production API host and rejects cleartext traffic. Replace that host at build/release time only after the backend is deployed and its health and AI request paths have been tested from the app.
+The release build is locked to `https://api.aiopter.ai` and rejects cleartext traffic. That hostname is the intended production API; it must not be described as live until its HTTPS health endpoint and an authenticated AI request pass against the deployed service.
 
 ## Safety model
 
@@ -35,4 +35,4 @@ Screen sharing and microphone access are off by default. Android owns each permi
 
 ## Current acceptance boundary
 
-Backend behavior is covered by automated contract tests. A full native APK build is enforced in x86 Linux CI; this workspace is ARM64 while Google's Linux AAPT2 binary is x86-64-only. Live Nxcode login and AI calls require a platform-authenticated preview or deployed app and must be exercised there before release.
+Backend behavior and device-independent Android policy/configuration logic are covered by automated tests. CI enforces policy tests, Android unit tests and lint, debug/release APK builds, and a required debug APK artifact. Live sign-in, AI calls, overlay, MediaProjection, speech recognition, and STOP/KILL behavior must still pass the real-device checklist before release.

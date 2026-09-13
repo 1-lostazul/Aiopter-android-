@@ -5,11 +5,31 @@ import { deriveSafeAction } from '../src/contracts.js'
 const provider = async () => 'I can help with that safely.'
 const env = { THREAD_ID: 'test-thread', AUTH_REQUIRED: 'false' }
 
-describe('Alopter API', () => {
+describe('AIopter API', () => {
   it('reports health without exposing internals', async () => {
     const response = await createApp(provider).request('/health', {}, env)
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ ok: true, service: 'alopter-api', version: 'v1' })
+    expect(await response.json()).toEqual({ ok: true, service: 'aiopter-api', version: 'v1' })
+  })
+  it('fails health and chat safely when gateway identity is missing', async () => {
+    const app = createApp(provider)
+    const health = await app.request('/health', {}, {})
+    expect(health.status).toBe(503)
+    expect(await health.json()).toEqual({ ok: false, service: 'aiopter-api', error: 'Service identity is not configured.' })
+    const chat = await app.request('/api/v1/chat/stream', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer test-session' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: 'Hello' }] }),
+    }, {})
+    expect(chat.status).toBe(503)
+  })
+  it('cannot disable authentication when a production app identity is configured', async () => {
+    const response = await createApp(provider).request('/api/v1/chat/stream', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: 'Hello' }] }),
+    }, { NXCODE_APP_ID: 'production-app', AUTH_REQUIRED: 'false' })
+    expect(response.status).toBe(401)
   })
   it('rejects invalid chat payloads', async () => {
     const response = await createApp(provider).request('/api/v1/chat/stream', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: [] }) }, env)

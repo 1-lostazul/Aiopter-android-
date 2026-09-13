@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "Alopter"
+rootProject.name = "AIopter"
 include(":android:app", ":core:policy")
