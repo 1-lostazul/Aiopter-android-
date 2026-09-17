@@ -15,53 +15,103 @@ import org.json.JSONObject
 import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 
 class BackendClient(private val baseUrl: String, private val tokenVault: TokenVault) {
-    private val client = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(90, TimeUnit.SECONDS).callTimeout(120, TimeUnit.SECONDS).build()
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(90, TimeUnit.SECONDS)
+        .callTimeout(120, TimeUnit.SECONDS)
+        .build()
 
-    suspend fun streamChat(history: List<ChatMessage>, imageJpeg: ByteArray? = null, onEvent: (StreamEvent) -> Unit): Call =
-        suspendCancellableCoroutine { continuation ->
-            require(history.isNotEmpty())
-            val messages = JSONArray().apply {
-                history.takeLast(20).forEach { put(JSONObject().put("role", it.role).put("content", it.content)) }
+    suspend fun streamChat(
+        history: List<ChatMessage>,
+        imageJpeg: ByteArray? = null,
+        onEvent: (StreamEvent) -> Unit,
+    ): Call = suspendCancellableCoroutine { continuation ->
+        require(history.isNotEmpty())
+
+        val messages = JSONArray().apply {
+            history.takeLast(20).forEach {
+                put(JSONObject().put("role", it.role).put("content", it.content))
             }
-            val json = JSONObject()
-                .put("requestId", UUID.randomUUID().toString())
-                .put("messages", messages)
-            imageJpeg?.let {
-                json.put("image", JSONObject().put("mimeType", "image/jpeg").put("data", Base64.encodeToString(it, Base64.NO_WRAP)))
+        }
+        val json = JSONObject()
+            .put("requestId", UUID.randomUUID().toString())
+            .put("messages", messages)
+        imageJpeg?.let {
+            json.put(
+                "image",
+                JSONObject()
+                    .put("mimeType", "image/jpeg")
+                    .put("data", Base64.encodeToString(it, Base64.NO_WRAP)),
+            )
+        }
+
+        val request = Request.Builder()
+            .url("${baseUrl.trimEnd('/')}/api/v1/chat/stream")
+            .post(json.toString().toRequestBody("application/json".toMediaType()))
+            .header("Accept", "text/event-stream")
+            .apply { tokenVault.read()?.let { header("Authorization", "Bearer $it") } }
+            .build()
+        val call = client.newCall(request)
+        val completed = AtomicBoolean(false)
+
+        fun finish() {
+            // OkHttp can report cancellation/failure while the response callback is
+            // unwinding. Resume the suspend function exactly once.
+            if (completed.compareAndSet(false, true) && continuation.isActive) {
+                continuation.resume(call)
             }
-            val request = Request.Builder().url("${baseUrl.trimEnd('/')}/api/v1/chat/stream")
-                .post(json.toString().toRequestBody("application/json".toMediaType()))
-                .header("Accept", "text/event-stream")
-                .apply { tokenVault.read()?.let { header("Authorization", "Bearer $it") } }
-                .build()
-            val call = client.newCall(request)
-            continuation.invokeOnCancellation { call.cancel() }
-            call.enqueue(object : Callback {
-                override fun onFailure(call: Call, error: IOException) {
-                    if (continuation.isActive) {
-                        if (!call.isCanceled()) onEvent(StreamEvent.Error(error.message ?: "Network unavailable"))
-                        continuation.resume(call)
-                    }
+        }
+
+        continuation.invokeOnCancellation {
+            completed.set(true)
+            call.cancel()
+        }
+
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call, error: IOException) {
+                if (!call.isCanceled() && continuation.isActive) {
+                    onEvent(StreamEvent.Error(error.message ?: "Network unavailable"))
                 }
+                finish()
+            }
 
-                override fun onResponse(call: Call, response: Response) {
-                    try {
-                        response.use {
-                            if (!response.isSuccessful) {
-                                val raw = response.body?.string().orEmpty()
-                                val detail = runCatching { JSONObject(raw).optString("error") }.getOrNull()
-                                onEvent(StreamEvent.Error(detail?.takeIf(String::isNotBlank) ?: "Alopter could not reach the assistant."))
-                                return@use
+            override fun onResponse(call: Call, response: Response) {
+                try {
+                    response.use {
+                        if (!response.isSuccessful) {
+                            val raw = response.body?.string().orEmpty()
+                            val detail = runCatching { JSONObject(raw).optString("error") }
+                                .getOrNull()
+                            if (!call.isCanceled()) {
+                                onEvent(
+                                    StreamEvent.Error(
+                                        detail?.takeIf(String::isNotBlank)
+                                            ?: "Alopter could not reach the assistant.",
+                                    ),
+                                )
                             }
-                            val source = response.body?.source() ?: return@use
+                            return@use
+                        }
+
+                        val source = response.body?.source()
+                        if (source == null) {
+                            onEvent(StreamEvent.Error("The assistant returned an empty response."))
+                            return@use
+                        }
+                        source.use {
                             while (!source.exhausted() && !call.isCanceled()) {
                                 val line = source.readUtf8Line() ?: break
                                 if (!line.startsWith("data:")) continue
-                                val payload = JSONObject(line.removePrefix("data:").trim())
+                                val payload = runCatching {
+                                    JSONObject(line.removePrefix("data:").trim())
+                                }.getOrElse {
+                                    onEvent(StreamEvent.Error("The assistant returned an invalid response."))
+                                    break
+                                }
                                 when (payload.optString("type")) {
                                     "delta" -> onEvent(StreamEvent.Delta(payload.optString("text")))
                                     "action" -> onEvent(
@@ -75,16 +125,23 @@ class BackendClient(private val baseUrl: String, private val tokenVault: TokenVa
                                         ),
                                     )
                                     "done" -> onEvent(StreamEvent.Done)
-                                    "error" -> onEvent(StreamEvent.Error(payload.optString("message", "Assistant error")))
+                                    "error" -> onEvent(
+                                        StreamEvent.Error(
+                                            payload.optString("message", "Assistant error"),
+                                        ),
+                                    )
                                 }
                             }
                         }
-                    } catch (error: Exception) {
-                        if (!call.isCanceled()) onEvent(StreamEvent.Error(error.message ?: "Invalid assistant response"))
-                    } finally {
-                        continuation.resume(call)
                     }
+                } catch (error: Exception) {
+                    if (!call.isCanceled() && continuation.isActive) {
+                        onEvent(StreamEvent.Error(error.message ?: "Invalid assistant response"))
+                    }
+                } finally {
+                    finish()
                 }
-            })
-        }
+            }
+        })
+    }
 }
